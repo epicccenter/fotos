@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reporte de Ubicación</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #f4f4f4; }
+    button { padding: 0.5rem 1rem; margin-bottom: 1rem; }
+    ul { list-style: none; padding: 0; }
+    li { background: #fff; margin: 0.5rem 0; padding: 0.5rem; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <h1>📍 Reportar Ubicación</h1>
+  <button onclick="reportarUbicacion()">Enviar mi ubicación</button>
+  <p id="mensaje"></p>
+
+  <h2>📄 Ubicaciones registradas</h2>
+  <ul id="lista"></ul>
+
+  <script>
+    async function reportarUbicacion() {
+      if (!navigator.geolocation) {
+        document.getElementById('mensaje').textContent = 'Geolocalización no disponible';
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const timestamp = new Date().toISOString();
+
+        try {
+          const res = await fetch('https://fotos-82qq.onrender.com/api/ubicacion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat, lon, timestamp })
+          });
+
+          const data = await res.json();
+          document.getElementById('mensaje').textContent = data.message || 'Error al enviar';
+          cargarUbicaciones(); // refresca la lista
+        } catch (err) {
+          document.getElementById('mensaje').textContent = 'Error al conectar con el servidor';
+        }
+      }, (err) => {
+        document.getElementById('mensaje').textContent = 'Permiso denegado o error al obtener ubicación';
+      });
+    }
+
+    async function cargarUbicaciones() {
+      try {
+        const res = await fetch('https://fotos-82qq.onrender.com/api/ubicaciones');
+        const ubicaciones = await res.json();
+
+        const lista = document.getElementById('lista');
+        lista.innerHTML = '';
+
+        ubicaciones.forEach(u => {
+          const item = document.createElement('li');
+          item.textContent = `🗺️ Lat: ${u.latitud}, Lon: ${u.longitud}, 🕒 ${u.timestamp}`;
+          lista.appendChild(item);
+        });
+      } catch (err) {
+        document.getElementById('lista').innerHTML = '<li>Error al cargar ubicaciones</li>';
+      }
+    }
+
+    cargarUbicaciones(); // carga al inicio
+  </script>
+</body>
+</html>
